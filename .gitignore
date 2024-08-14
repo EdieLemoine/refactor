@@ -1,0 +1,12 @@
+.idea/
+node_modules/
+cache/
+dist/
+coverage/
+tmp/
+
+.DS_Store
+*.log
+.cache
+*.tsbuildinfo
+*.tgz
