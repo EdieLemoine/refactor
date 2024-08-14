@@ -5,7 +5,6 @@ import {type Debugger} from 'debug';
 export const extendDebuggerFunctions = (options: RefactorOptions, debug: Debugger): CustomDebugger => {
   const logFromVerbosity = (verbosity: number): (formatter: any, ...args: any[]) => void => {
     return (formatter: any, ...args: any[]): void => {
-
       if (options.verbose < verbosity) {
         return;
       }

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type {Debugger} from 'debug';
 import type {LiftoffEnv} from 'liftoff';
+import {FileChange} from './constants.ts';
 
 export interface RefactorOptions {
   barrelFilename: string;
@@ -11,7 +12,19 @@ export interface RefactorOptions {
   verbose: number;
 }
 
-export type FileChangeDefinition = { old: string; new: string; };
+interface BaseFileModificationDefinition<Type extends FileChange> {
+  path: string;
+  type: Type;
+}
+
+export type FileDeleteDefinition = BaseFileModificationDefinition<FileChange.Delete>
+
+export interface FileUpdateDefinition extends BaseFileModificationDefinition<FileChange.Update> {
+  newContent: string,
+  oldContent: string,
+}
+
+export type FileModificationDefinition = FileDeleteDefinition | FileUpdateDefinition;
 
 export interface CommandContext {
   debug: CustomDebugger,
@@ -40,7 +53,7 @@ export interface CustomDebugger extends Debugger {
   warn(formatter: any, ...args: any[]): void;
 }
 
-export type FileChangeMap = Map<string, FileChangeDefinition[]>;
+export type FileChangeMap = Map<string, FileModificationDefinition[]>;
 
 export type BarrelSet = Set<string>;
 

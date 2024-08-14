@@ -1,4 +1,9 @@
-import type {CommandContext, FileChangeMap, FileChangeDefinition, ImportOrExportStatementDefinition} from '../types.ts';
+import type {
+  CommandContext,
+  ImportOrExportStatementDefinition,
+  FileUpdateDefinition,
+  FileModificationDefinition,
+} from '../types.ts';
 import {extendContext} from '../utils/extendContext.ts';
 import {createSourceFile} from '../utils/ts/createSourceFile.ts';
 import * as ts from 'typescript';
@@ -11,16 +16,15 @@ import {formatImportOrExportStatements} from '../utils/formatImportOrExportState
 import {addToMapSet} from '../utils/addToMapSet.ts';
 import {formatImportOrExportPath} from '../utils/formatImportOrExportPath.ts';
 import {getExportsFromBarrel} from '../utils/getExportsFromBarrel.ts';
+import {FileChange} from '../constants.ts';
 
-export const scanExportUpdates = (inputContext: CommandContext, barrels: Map<string, Set<string>>, variables: Map<string, Set<string>>): FileChangeMap => {
+export const scanExportUpdates = (inputContext: CommandContext, barrels: Map<string, Set<string>>, variables: Map<string, Set<string>>): FileModificationDefinition[] => {
   const context = extendContext(inputContext, 'scanExports');
   const rootBarrelPath = `${context.inputPath}/${context.options.barrelFilename}`;
 
-  const fileChanges = new Map<string, FileChangeDefinition[]>();
-
   if (!barrels.has(rootBarrelPath)) {
     context.debug.debug(chalk.gray('no entry barrel file'));
-    return fileChanges;
+    return [];
   }
 
   const sourceFile = createSourceFile(rootBarrelPath);
@@ -28,14 +32,14 @@ export const scanExportUpdates = (inputContext: CommandContext, barrels: Map<str
   const exports = sourceFile.statements.filter(ts.isExportDeclaration);
 
   // rewrite the exports to not use barrels
-  fileChanges.set(rootBarrelPath, exports.map((node) => {
+  return exports.map((node) => {
     const exportPath = resolveExportPath(context, node, rootBarrelPath);
-    const nestedDebug = extendDebugger(context, relativePath(context, exportPath));
 
     if (!exportPath.startsWith(context.inputPath)) {
       return;
     }
 
+    const nestedDebug = extendDebugger(context, relativePath(context, exportPath));
     const newExportPath = formatImportOrExportPath(relativePath(context, exportPath));
 
     nestedDebug.debug('exporting from', chalk.yellowBright(newExportPath));
@@ -60,10 +64,10 @@ export const scanExportUpdates = (inputContext: CommandContext, barrels: Map<str
     });
 
     return {
-      old: node.getText(),
-      new: formatImportOrExportStatements(context, 'export', newExports).join('\n'),
-    };
-  }).filter(Boolean) as FileChangeDefinition[]);
-
-  return fileChanges;
+      type: FileChange.Update,
+      path: rootBarrelPath,
+      oldContent: node.getText(),
+      newContent: formatImportOrExportStatements(context, 'export', newExports).join('\n'),
+    } satisfies FileUpdateDefinition;
+  }).filter(Boolean) as FileUpdateDefinition[];
 };

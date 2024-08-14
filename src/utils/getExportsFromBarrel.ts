@@ -13,6 +13,8 @@ export const getExportsFromBarrel = (context: CommandContext, variables: Variabl
       return;
     }
 
+    context.debug.debug('found exports in', chalk.yellow(relativePath(context, barrelPath)), value);
+
     matchingExports.set(barrelPath, value);
   });
 

@@ -23,6 +23,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.8.0",
+    "@vue/compiler-sfc": "^3.4.37",
     "@myparcel/prettier-config": "^1.1.0",
     "@types/bun": "latest",
     "@types/debug": "latest",

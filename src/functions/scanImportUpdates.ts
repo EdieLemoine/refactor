@@ -1,9 +1,9 @@
 import type {
   CommandContext,
-  FileChangeDefinition,
   ImportOrExportStatementDefinition,
   VariableMap,
   BarrelMap,
+  FileModificationDefinition,
 } from '../types.ts';
 import {relativePath} from '../utils/relativePath.ts';
 import {createSourceFile} from '../utils/ts/createSourceFile.ts';
@@ -14,9 +14,8 @@ import chalk from 'chalk';
 import path from 'node:path';
 import {extendContext} from '../utils/extendContext.ts';
 import {addToMapSet} from '../utils/addToMapSet.ts';
-import {addToMapArray} from '../utils/addToMapArray.ts';
 import {glob} from 'fast-glob';
-import {BASE_IGNORES} from '../constants.ts';
+import {BASE_IGNORES, FileChange} from '../constants.ts';
 import {parseImportOrExportClause} from '../utils/parseImportOrExportClause.ts';
 import {formatImportOrExportStatements} from '../utils/formatImportOrExportStatements.ts';
 import {formatImportOrExportPath} from '../utils/formatImportOrExportPath.ts';
@@ -26,7 +25,7 @@ export const scanImportUpdates = (
   inputContext: CommandContext,
   barrels: BarrelMap,
   variables: VariableMap,
-): Map<string, FileChangeDefinition[]> => {
+): FileModificationDefinition[] => {
   const context = extendContext(inputContext, 'scanImports');
 
   context.debug.debug('calculating file updates');
@@ -38,7 +37,7 @@ export const scanImportUpdates = (
     ],
   });
 
-  const fileChanges = new Map<string, FileChangeDefinition[]>();
+  const fileChanges: FileModificationDefinition[] = [];
 
   sourceFiles.forEach((file) => {
     const nestedContext = extendContext(context, relativePath(context, file));
@@ -92,17 +91,19 @@ export const scanImportUpdates = (
         addToMapSet(newImportPath, { name, isType }, newImports);
       });
 
-      const fileChange: FileChangeDefinition = {
-        old: node.getText(),
-        new: formatImportOrExportStatements(context, 'import', newImports).join('\n'),
-      };
+      const newStatements = formatImportOrExportStatements(context, 'import', newImports);
 
-      if (fileChange.new === '') {
+      if (newStatements.length === 0) {
         nestedContext.debug.warn(chalk.red('EMPTY REPLACEMENT!'));
         return;
       }
 
-      addToMapArray(file, fileChange, fileChanges);
+      fileChanges.push({
+        type: FileChange.Update,
+        path: file,
+        oldContent: node.getText(),
+        newContent: newStatements.join('\n'),
+      });
     });
   });
 

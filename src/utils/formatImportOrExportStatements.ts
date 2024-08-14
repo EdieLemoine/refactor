@@ -13,6 +13,7 @@ export const formatImportOrExportStatements = (
 
   return sorted.map(([filePath, importedValues]) => {
     const isTypeOnly = [...importedValues].every(({ isType }) => isType);
+    const typeKeyword = isTypeOnly ? ' type' : '';
 
     const imports = [...importedValues]
       .sort((a, b) => a.name.localeCompare(b.name))
@@ -24,10 +25,6 @@ export const formatImportOrExportStatements = (
         return isType ? `type ${name}` : name;
       });
 
-    if (isTypeOnly) {
-      keyword += ' type';
-    }
-
-    return `${keyword} {${imports.join(', ')}} from ${quoteCharacter}${filePath}${quoteCharacter};`;
+    return `${keyword}${typeKeyword} {${imports.join(', ')}} from ${quoteCharacter}${filePath}${quoteCharacter};`;
   });
 };

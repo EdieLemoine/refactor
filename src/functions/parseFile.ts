@@ -15,6 +15,13 @@ const scanFile = (context: CommandContext, file: string): {
 
   const sourceFile = createSourceFile(file);
 
+  if (file.endsWith('.vue')) {
+    context.debug.debug(chalk.yellow('setting "default" as vue sfc export'));
+    variables.set(file, new Set(['default']));
+
+    return { barrels, variables };
+  }
+
   sourceFile.statements.forEach((node) => {
     // Standalone export statements
     if (ts.isExportDeclaration(node)) {
