@@ -6,6 +6,7 @@ import {FileChange} from './constants.ts';
 export interface RefactorOptions {
   barrelFilename: string;
   dryRun: boolean;
+  lineWidth: number;
   quiet: boolean;
   singleQuotes: boolean;
   sourceGlob: string;
