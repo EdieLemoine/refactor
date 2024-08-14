@@ -1,4 +1,10 @@
-import type {CommandContext, FileChangeDefinition, ImportOrExportStatementDefinition} from '../types.ts';
+import type {
+  CommandContext,
+  FileChangeDefinition,
+  ImportOrExportStatementDefinition,
+  VariableMap,
+  BarrelMap,
+} from '../types.ts';
 import {relativePath} from '../utils/relativePath.ts';
 import {createSourceFile} from '../utils/ts/createSourceFile.ts';
 import * as ts from 'typescript';
@@ -7,17 +13,19 @@ import {isBarrelFile} from '../utils/isBarrelFile.ts';
 import chalk from 'chalk';
 import path from 'node:path';
 import {extendContext} from '../utils/extendContext.ts';
-import {formatImportStatements} from '../utils/formatImportStatements.ts';
 import {addToMapSet} from '../utils/addToMapSet.ts';
 import {addToMapArray} from '../utils/addToMapArray.ts';
 import {glob} from 'fast-glob';
 import {BASE_IGNORES} from '../constants.ts';
 import {parseImportOrExportClause} from '../utils/parseImportOrExportClause.ts';
+import {formatImportOrExportStatements} from '../utils/formatImportOrExportStatements.ts';
+import {formatImportOrExportPath} from '../utils/formatImportOrExportPath.ts';
+import {getExportsFromBarrel} from '../utils/getExportsFromBarrel.ts';
 
 export const scanImportUpdates = (
   inputContext: CommandContext,
-  barrels: Map<string, Set<string>>,
-  variables: Map<string, Set<string>>,
+  barrels: BarrelMap,
+  variables: VariableMap,
 ): Map<string, FileChangeDefinition[]> => {
   const context = extendContext(inputContext, 'scanImports');
 
@@ -65,25 +73,10 @@ export const scanImportUpdates = (
 
       const newImports = new Map<string, Set<ImportOrExportStatementDefinition>>();
 
-      const barrel = barrels.get(targetFilePath);
+      const matchingExports = getExportsFromBarrel(nestedContext, variables, barrels.get(targetFilePath));
 
-      const matchingExports = new Map<string, Set<string>>();
-
-      barrel?.forEach((barrelPath) => {
-        const value = variables.get(barrelPath);
-
-        if (!value) {
-          nestedContext.debug.warn(chalk.red('no exported variables found in'), chalk.yellow(relativePath(nestedContext, barrelPath)));
-          return;
-        }
-
-        nestedContext.debug.info(chalk.green('match found in'), chalk.yellow(relativePath(nestedContext, barrelPath)));
-
-        matchingExports.set(barrelPath, value);
-      });
-
-      node.importClause?.namedBindings?.forEachChild((node) => {
-        const { isType, name } = parseImportOrExportClause(node);
+      node.importClause?.namedBindings?.forEachChild((childNode) => {
+        const { isType, name } = parseImportOrExportClause(childNode);
 
         const matchingFile = Array.from(matchingExports.entries()).find(([, value]) => value.has(name));
 
@@ -92,12 +85,7 @@ export const scanImportUpdates = (
           return;
         }
 
-        let newImportPath = path.relative(path.dirname(file), matchingFile[0]).replace(/.ts$/, '');
-
-        // if it does not start with ., add ./ to make it relative
-        if (!newImportPath.startsWith('.')) {
-          newImportPath = `./${newImportPath}`;
-        }
+        const newImportPath = formatImportOrExportPath(path.relative(path.dirname(file), matchingFile[0]));
 
         nestedContext.debug.debug(chalk.green('replace:'), chalk.gray(importPath), '->', chalk.green(newImportPath));
 
@@ -106,7 +94,7 @@ export const scanImportUpdates = (
 
       const fileChange: FileChangeDefinition = {
         old: node.getText(),
-        new: formatImportStatements(newImports).join('\n'),
+        new: formatImportOrExportStatements(context, 'import', newImports).join('\n'),
       };
 
       if (fileChange.new === '') {

@@ -18,8 +18,6 @@ export const executeRefactor = async (env: LiftoffEnv, inputPath: string, option
   const importUpdates = scanImportUpdates(context, barrels, variables);
   const exportUpdates = scanExportUpdates(context, barrels, variables);
 
-  process.exit(0);
-
   const fileUpdates: Map<string, FileChangeDefinition[]> = new Map([...importUpdates, ...exportUpdates]);
 
   write(context, fileUpdates);

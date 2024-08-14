@@ -6,6 +6,7 @@ export interface RefactorOptions {
   barrelFilename: string;
   dryRun: boolean;
   quiet: boolean;
+  singleQuotes: boolean;
   sourceGlob: string;
   verbose: number;
 }
@@ -40,3 +41,11 @@ export interface CustomDebugger extends Debugger {
 }
 
 export type FileChangeMap = Map<string, FileChangeDefinition[]>;
+
+export type BarrelSet = Set<string>;
+
+export type VariableSet = Set<string>;
+
+export type BarrelMap = Map<string, BarrelSet>;
+
+export type VariableMap = Map<string, VariableSet>;

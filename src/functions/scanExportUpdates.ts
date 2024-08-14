@@ -1,13 +1,16 @@
-import type {CommandContext, FileChangeMap, FileChangeDefinition} from '../types.ts';
+import type {CommandContext, FileChangeMap, FileChangeDefinition, ImportOrExportStatementDefinition} from '../types.ts';
 import {extendContext} from '../utils/extendContext.ts';
 import {createSourceFile} from '../utils/ts/createSourceFile.ts';
-import type {ExportSpecifier} from 'typescript';
 import * as ts from 'typescript';
 import {resolveExportPath} from '../utils/resolveExportPath.ts';
 import {extendDebugger} from '../utils/extendDebugger.ts';
 import {relativePath} from '../utils/relativePath.ts';
 import chalk from 'chalk';
 import {parseImportOrExportClause} from '../utils/parseImportOrExportClause.ts';
+import {formatImportOrExportStatements} from '../utils/formatImportOrExportStatements.ts';
+import {addToMapSet} from '../utils/addToMapSet.ts';
+import {formatImportOrExportPath} from '../utils/formatImportOrExportPath.ts';
+import {getExportsFromBarrel} from '../utils/getExportsFromBarrel.ts';
 
 export const scanExportUpdates = (inputContext: CommandContext, barrels: Map<string, Set<string>>, variables: Map<string, Set<string>>): FileChangeMap => {
   const context = extendContext(inputContext, 'scanExports');
@@ -33,30 +36,32 @@ export const scanExportUpdates = (inputContext: CommandContext, barrels: Map<str
       return;
     }
 
-    const newExportPath = `./${relativePath(context, exportPath)}`;
+    const newExportPath = formatImportOrExportPath(relativePath(context, exportPath));
 
     nestedDebug.debug('exporting from', chalk.yellowBright(newExportPath));
 
-    const exports: ExportSpecifier[] = [];
+    const newExports = new Map<string, Set<ImportOrExportStatementDefinition>>();
+
+    const matchingExports = getExportsFromBarrel(context, variables, barrels.get(exportPath));
 
     node.exportClause?.forEachChild((childNode) => {
       const { name, isType } = parseImportOrExportClause(childNode);
 
-      nestedDebug.debug('child', name);
+      const matchingFile = Array.from(matchingExports.entries()).find(([, value]) => value.has(name));
 
-      exports.push(ts.factory.createExportSpecifier(isType, name, name));
+      if (!matchingFile) {
+        context.debug.error(chalk.red('no matching file found for', name));
+        return;
+      }
+
+      const newExportPath = formatImportOrExportPath(relativePath(context, matchingFile[0]));
+
+      addToMapSet(newExportPath, { name, isType }, newExports);
     });
-
-    const newExport = ts.factory.createExportDeclaration(
-      undefined,
-      exports.every((item) => item.isTypeOnly),
-      ts.factory.createNamedExports(exports),
-      ts.factory.createStringLiteral(newExportPath, true),
-    );
 
     return {
       old: node.getText(),
-      new: newExport.getText(),
+      new: formatImportOrExportStatements(context, 'export', newExports).join('\n'),
     };
   }).filter(Boolean) as FileChangeDefinition[]);
 

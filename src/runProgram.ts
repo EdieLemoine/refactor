@@ -15,6 +15,7 @@ export const runProgram = (env: LiftoffEnv, argv: string[]): void => {
     .option('-d, --dry-run', 'Run the refactor without writing to disk.', false)
     .option('-v, --verbose', 'Log verbosity.', (_: string, prev: number) => prev + 1, 0)
     .option('-q, --quiet', 'Suppress output.', false)
+    .option('--single-quotes', 'Use single quotes.', false)
     .action((inputPath: string, options: RefactorOptions) => executeRefactor(env, inputPath, options));
 
   program.parse(argv);
