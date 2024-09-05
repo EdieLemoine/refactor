@@ -2,12 +2,16 @@ import * as ts from 'typescript';
 import fs from 'node:fs';
 import {memoize} from '../memoize.ts';
 import {parse} from '@vue/compiler-sfc';
+import type {CommandContext, RefactorOptions} from '../../types.ts';
+import {toAbsolute} from '../toAbsolute.ts';
 
-const realCreateSourceFile = (file: string): ts.SourceFile => {
+const realCreateSourceFile = (context: CommandContext<RefactorOptions>, file: string): ts.SourceFile => {
+  const resolvedPath = toAbsolute(context, file);
+
   let sourceText: string;
-  const fileContents = fs.readFileSync(file, 'utf-8').toString();
+  const fileContents = fs.readFileSync(resolvedPath, 'utf-8').toString();
 
-  if (file.endsWith('.vue')) {
+  if (resolvedPath.endsWith('.vue')) {
     // Parse Vue SFC components
     const result = parse(fileContents);
 
@@ -17,7 +21,7 @@ const realCreateSourceFile = (file: string): ts.SourceFile => {
   }
 
   return ts.createSourceFile(
-    file,
+    resolvedPath,
     sourceText,
     ts.ScriptTarget.Latest,
     true,

@@ -3,14 +3,18 @@ import type {Debugger} from 'debug';
 import type {LiftoffEnv} from 'liftoff';
 import {FileChange} from './constants.ts';
 
-export interface RefactorOptions {
+export interface BaseOptions {
+  quiet: boolean;
+  verbose: number;
+}
+
+export interface RefactorOptions extends BaseOptions {
   barrelFilename: string;
   dryRun: boolean;
   lineWidth: number;
-  quiet: boolean;
+  rootBarrel?: string;
   singleQuotes: boolean;
   sourceGlob: string;
-  verbose: number;
 }
 
 interface BaseFileModificationDefinition<Type extends FileChange> {
@@ -27,11 +31,11 @@ export interface FileUpdateDefinition extends BaseFileModificationDefinition<Fil
 
 export type FileModificationDefinition = FileDeleteDefinition | FileUpdateDefinition;
 
-export interface CommandContext {
+export interface CommandContext<Options extends BaseOptions = BaseOptions> {
   debug: CustomDebugger,
   env: LiftoffEnv,
   inputPath: string;
-  options: RefactorOptions
+  options: Options
 }
 
 export interface BarrelsAndVariables {

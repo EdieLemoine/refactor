@@ -1,6 +1,6 @@
 import type {BarrelSet, VariableMap, CommandContext} from '../types.ts';
 import chalk from 'chalk';
-import {relativePath} from './relativePath.ts';
+import {toRelative} from './toRelative.ts';
 
 export const getExportsFromBarrel = (context: CommandContext, variables: VariableMap, barrel: BarrelSet | undefined): Map<string, Set<string>> => {
   const matchingExports = new Map<string, Set<string>>();
@@ -9,11 +9,11 @@ export const getExportsFromBarrel = (context: CommandContext, variables: Variabl
     const value = variables.get(barrelPath);
 
     if (!value) {
-      context.debug.warn(chalk.red('no exported variables found in'), chalk.yellow(relativePath(context, barrelPath)));
+      context.debug.warn(chalk.red('no exported variables found in'), chalk.yellow(toRelative(context, barrelPath)));
       return;
     }
 
-    context.debug.debug('found exports in', chalk.yellow(relativePath(context, barrelPath)), value);
+    context.debug.debug(chalk.green(`found ${value.size} exports in`, chalk.yellow(toRelative(context, barrelPath))));
 
     matchingExports.set(barrelPath, value);
   });

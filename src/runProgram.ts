@@ -3,12 +3,14 @@ import {program} from 'commander';
 import {executeRefactor} from './executeRefactor.ts';
 import {TITLE} from './constants.ts';
 import type {RefactorOptions} from './types.ts';
+import path from 'node:path';
 
 export const runProgram = (env: LiftoffEnv, argv: string[]): void => {
   program.name(TITLE).description('Refactor barrel files.');
 
   program
-    .argument('[path]', 'The path to the directory to refactor.', process.cwd())
+    .command('refactor')
+    .argument('[path]', 'The path to the directory to refactor.', (input) => path.resolve(input), process.cwd())
     .option('--barrel-filename', 'The glob pattern to match barrel files.', 'index.ts')
     .option('--delete', 'Delete the barrel files after refactoring.', false)
     .option('--source-glob', 'The glob pattern to match source files.', '**/*.{ts,vue}')

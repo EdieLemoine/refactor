@@ -1,13 +1,14 @@
-import type {CommandContext} from '../types.ts';
+import type {CommandContext, RefactorOptions} from '../types.ts';
 import {extendDebugger} from '../utils/extendDebugger.ts';
 import fs from 'node:fs';
-import {relativePath} from '../utils/relativePath.ts';
 import {extendContext} from '../utils/extendContext.ts';
 import {createSourceFile} from '../utils/ts/createSourceFile.ts';
 import * as ts from 'typescript';
 import chalk from 'chalk';
+import {isRootBarrel} from '../utils/isRootBarrel.ts';
+import {toAbsolute} from '../utils/toAbsolute.ts';
 
-export const deleteBarrelFiles = (inputContext: CommandContext, barrels: Map<string, Set<string>>): void => {
+export const deleteBarrelFiles = (inputContext: CommandContext<RefactorOptions>, barrels: Map<string, Set<string>>): void => {
   const context = extendContext(inputContext, 'delete');
 
   const { dryRun } = context.options;
@@ -18,15 +19,16 @@ export const deleteBarrelFiles = (inputContext: CommandContext, barrels: Map<str
   }
 
   barrels.forEach((_, barrelFile) => {
-    const nestedDebug = extendDebugger(context, relativePath(context, barrelFile));
+    const absoluteBarrelPath = toAbsolute(context, barrelFile);
+    const nestedDebug = extendDebugger(context, barrelFile);
 
-    if (relativePath(context, barrelFile) === context.options.barrelFilename) {
+    if (isRootBarrel(context, barrelFile)) {
       nestedDebug.debug(chalk.gray('skipping entry barrel file'));
       return;
     }
 
     // determine if this barrel is safe to delete
-    const sourceFile = createSourceFile(barrelFile);
+    const sourceFile = createSourceFile(context, barrelFile);
 
     const statementsToKeep = sourceFile.statements.filter((statement) => {
       if (!ts.isExportDeclaration(statement)) {
@@ -52,7 +54,8 @@ export const deleteBarrelFiles = (inputContext: CommandContext, barrels: Map<str
       // rewrite files with only these lines
       const newSourceFile = ts.factory.updateSourceFile(sourceFile, statementsToKeep);
 
-      fs.writeFileSync(barrelFile, newSourceFile.getText());
+      debug.debug('WRITING 3:', absoluteBarrelPath);
+      fs.writeFileSync(absoluteBarrelPath, newSourceFile.getText());
 
       return;
     }
@@ -63,6 +66,6 @@ export const deleteBarrelFiles = (inputContext: CommandContext, barrels: Map<str
       return;
     }
 
-    fs.rmSync(barrelFile);
+    fs.rmSync(absoluteBarrelPath);
   });
 };

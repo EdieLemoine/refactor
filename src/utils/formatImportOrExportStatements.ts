@@ -1,8 +1,8 @@
-import type {CommandContext, ImportOrExportStatementDefinition} from '../types.ts';
+import type {CommandContext, ImportOrExportStatementDefinition, RefactorOptions} from '../types.ts';
 import {getQuoteCharacter} from './getQuoteCharacter.ts';
 
 export const formatImportOrExportStatements = (
-  context: CommandContext,
+  context: CommandContext<RefactorOptions>,
   keyword: 'export' | 'import',
   importsOrExports: Map<string, Set<ImportOrExportStatementDefinition>>,
 ): string[] => {

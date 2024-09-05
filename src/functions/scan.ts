@@ -1,21 +1,41 @@
-import type {CommandContext, BarrelsAndVariables} from '../types.ts';
-import {scanFileExports} from './parseFile.ts';
+import type {CommandContext, BarrelsAndVariables, RefactorOptions} from '../types.ts';
 import {glob} from 'fast-glob';
 import {BASE_IGNORES} from '../constants.ts';
 import {extendContext} from '../utils/extendContext.ts';
+import {toRelative} from '../utils/toRelative.ts';
+import chalk from 'chalk';
 
-export const scan = (inputContext: CommandContext): BarrelsAndVariables => {
+import {scanFileExports} from './scan/scanFileExports.ts';
+
+export const scan = (inputContext: CommandContext<RefactorOptions>): BarrelsAndVariables => {
   const context = extendContext(inputContext, 'scan');
 
-  const barrelFiles = glob.sync(`${context.inputPath}/**/${context.options.barrelFilename}`, { ignore: BASE_IGNORES });
+  const barrelFiles = glob.sync(`./**/${context.options.barrelFilename}`, {
+    absolute: true,
+    cwd: context.inputPath,
+    ignore: BASE_IGNORES,
+  });
 
   const allBarrels = new Map<string, Set<string>>();
   const allVariables = new Map<string, Set<string>>();
 
-  barrelFiles.forEach((file) => {
-    const { barrels, variables } = scanFileExports(context, file);
+  if (!barrelFiles.length) {
+    context.debug.info(chalk.yellow('no barrel files found'));
 
-    allBarrels.set(file, barrels);
+    return {
+      barrels: allBarrels,
+      variables: allVariables,
+    };
+  }
+
+  context.options.rootBarrel = barrelFiles[0];
+
+  barrelFiles.forEach((filePath) => {
+    const relativeFilePath = toRelative(context, filePath);
+
+    const { barrels, variables } = scanFileExports(context, filePath);
+
+    allBarrels.set(relativeFilePath, barrels);
 
     variables.forEach((value, key) => {
       allVariables.set(key, new Set([...(allVariables.get(key) || []), ...value]));

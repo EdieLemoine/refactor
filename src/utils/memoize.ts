@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const cache = new Map<string, unknown>();
 
-// Create the memoize function
 export const memoize = <R, T extends (...args: any[]) => R>(
   fn: T,
   keyResolver?: (...args: Parameters<T>) => string,

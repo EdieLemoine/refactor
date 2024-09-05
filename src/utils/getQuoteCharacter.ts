@@ -1,3 +1,5 @@
-import type {CommandContext} from '../types.ts';
+import type {CommandContext, RefactorOptions} from '../types.ts';
 
-export const getQuoteCharacter = (context: CommandContext): string => context.options.singleQuotes ? '\'' : '"';
+export const getQuoteCharacter = (context: CommandContext<RefactorOptions>): string => context.options.singleQuotes
+  ? '\''
+  : '"';

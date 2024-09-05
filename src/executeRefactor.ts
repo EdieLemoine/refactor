@@ -4,9 +4,9 @@ import {createDebugger} from './utils/createDebugger.ts';
 import {TITLE, FileChange} from './constants.ts';
 import {createContext} from './utils/createContext.ts';
 import {scan} from './functions/scan.ts';
-import {scanImportUpdates} from './functions/scanImportUpdates.ts';
+import {scanImports} from './functions/scanImports.ts';
 import {write} from './functions/write.ts';
-import {scanExportUpdates} from './functions/scanExportUpdates.ts';
+import {scanExports} from './functions/scanExports.ts';
 import {deleteBarrelFiles} from './functions/deleteBarrelFiles.ts';
 
 export const executeRefactor = async (env: LiftoffEnv, inputPath: string, options: RefactorOptions): Promise<void> => {
@@ -15,8 +15,8 @@ export const executeRefactor = async (env: LiftoffEnv, inputPath: string, option
 
   const { barrels, variables } = scan(context);
 
-  const importUpdates = scanImportUpdates(context, barrels, variables);
-  const exportUpdates = scanExportUpdates(context, barrels, variables);
+  const importUpdates = scanImports(context, barrels, variables);
+  const exportUpdates = scanExports(context, barrels, variables);
 
   const fileUpdates: FileUpdateDefinition[] = [...importUpdates, ...exportUpdates].filter((update) => update.type ===
     FileChange.Update);
