@@ -54,7 +54,6 @@ export const deleteBarrelFiles = (inputContext: CommandContext<RefactorOptions>,
       // rewrite files with only these lines
       const newSourceFile = ts.factory.updateSourceFile(sourceFile, statementsToKeep);
 
-      debug.debug('WRITING 3:', absoluteBarrelPath);
       fs.writeFileSync(absoluteBarrelPath, newSourceFile.getText());
 
       return;
