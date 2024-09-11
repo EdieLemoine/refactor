@@ -103,7 +103,7 @@ export const scanExports = (inputContext: CommandContext<RefactorOptions>, barre
           i++;
         });
 
-        // if everything was exported, export '*' instead
+        // if everything was exported, export '*'
         if (context.options.allExports && foundExports.length === exportedVariables.size) {
           const isType = foundExports.every((value) => value.isType);
 
@@ -113,9 +113,9 @@ export const scanExports = (inputContext: CommandContext<RefactorOptions>, barre
           }, newExports);
 
           nestedDebug.debug(chalk.green(`exporting all ${isType ? 'as type ' : ''}from`), chalk.cyan(filePath));
-        } else {
-          foundExports.forEach((value) => addToMapSet(newExportPath, value, newExports));
         }
+
+        foundExports.forEach((value) => addToMapSet(newExportPath, value, newExports));
       });
     }
 

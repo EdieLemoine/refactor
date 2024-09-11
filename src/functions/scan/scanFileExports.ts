@@ -3,6 +3,8 @@ import {extendContext} from '../../utils/extendContext.ts';
 import {toRelative} from '../../utils/toRelative.ts';
 import chalk from 'chalk';
 import {scanFile} from './scanFile.ts';
+import {createBoxPrefix} from '../../utils/createBoxPrefix.ts';
+import {createFlatBoxPrefix} from '../../utils/createFlatBoxPrefix.ts';
 
 export const scanFileExports = (inputContext: CommandContext<RefactorOptions>, file: string): {
   barrels: Set<string>,
@@ -18,18 +20,22 @@ export const scanFileExports = (inputContext: CommandContext<RefactorOptions>, f
 
   const { barrels, variables } = scanFile(context, file);
 
+  let index = 1;
+
   barrels.forEach((barrelPath) => {
-    const nestedContext = extendContext(inputContext, barrelPath);
+    const boxPrefix = createBoxPrefix(index, barrels.size);
 
-    nestedContext.debug.info(chalk.cyan('parsing nested file:', barrelPath));
+    context.debug.info(boxPrefix, chalk.cyan('parsing nested file:', barrelPath));
 
-    const { barrels: nestedBarrels, variables: nestedVariables } = scanFile(nestedContext, barrelPath);
+    const { barrels: nestedBarrels, variables: nestedVariables } = scanFile(context, barrelPath, createFlatBoxPrefix());
 
     nestedBarrels.forEach(barrels.add, barrels);
 
     nestedVariables.forEach((value, key) => {
       variables.set(key, new Set([...(variables.get(key) || []), ...value]));
     });
+
+    index++;
   });
 
   return { barrels, variables };

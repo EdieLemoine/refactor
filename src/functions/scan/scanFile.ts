@@ -6,8 +6,9 @@ import * as ts from 'typescript';
 import {resolveExportPath} from '../../utils/resolveExportPath.ts';
 import {createBoxPrefix} from '../../utils/createBoxPrefix.ts';
 import {isExportNode} from '../../utils/ts/isExportNode.ts';
+import {trimText} from '../../utils/trimText.ts';
 
-export const scanFile = (context: CommandContext<RefactorOptions>, file: string): {
+export const scanFile = (context: CommandContext<RefactorOptions>, file: string, prefix: string = ''): {
   barrels: Set<string>,
   variables: Map<string, Set<string>>
 } => {
@@ -17,28 +18,32 @@ export const scanFile = (context: CommandContext<RefactorOptions>, file: string)
   const sourceFile = createSourceFile(context, file);
   const relativePath = toRelative(context, file);
 
+  const { debug } = context;
+
   if (file.endsWith('.vue')) {
-    context.debug.debug(chalk.yellow('setting "default" as vue sfc export'));
+    debug.debug(prefix + chalk.cyan('setting "default" as vue sfc export'));
     variables.set(relativePath, new Set(['default']));
 
     return { barrels, variables };
   }
 
+  debug.debug(prefix + chalk.magenta('scanning file:'), chalk.yellowBright(relativePath));
+
   sourceFile.statements.forEach((node, index) => {
     const nodeText = node.getText();
-    const boxPrefix = createBoxPrefix(index, sourceFile.statements.length);
+    const boxPrefix = prefix + createBoxPrefix(index, sourceFile.statements.length);
 
     // Standalone export statements
     if (ts.isExportDeclaration(node)) {
       if (!node.moduleSpecifier) {
-        context.debug.debug(chalk.gray('skipping export without module specifier'));
+        debug.debug(boxPrefix, chalk.gray('skipping export without module specifier'));
         return;
       }
 
       const resolvedExportPath = resolveExportPath(context, node, file);
 
       if (!resolvedExportPath) {
-        context.debug.debug(chalk.gray('skipping export without source'));
+        debug.debug(boxPrefix, chalk.gray('skipping export without source'));
         return;
       }
 
@@ -51,33 +56,33 @@ export const scanFile = (context: CommandContext<RefactorOptions>, file: string)
           variables.set(key, new Set([...(variables.get(key) || []), ...value]));
         });
 
-        context.debug.debug('exporting from barrel:', chalk.yellowBright(resolvedExportPath));
+        debug.debug(boxPrefix, chalk.green('exporting from barrel:'), chalk.cyanBright(resolvedExportPath));
 
         return;
       }
 
-      context.debug.debug(boxPrefix, 'exports from:', chalk.yellowBright(resolvedExportPath));
+      debug.debug(boxPrefix, chalk.green('exports from:'), chalk.cyanBright(resolvedExportPath));
 
       barrels.add(resolvedExportPath);
     } else if (isExportNode(node)) {
       const isExported = node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword);
 
       if (!isExported) {
-        context.debug.debug(chalk.gray('skipping non-exported node:', nodeText.slice(0, 50)));
+        debug.debug(boxPrefix, chalk.gray('skipping non-exported node:', trimText(nodeText)));
         return;
       }
 
-      const declarations = ts.isVariableStatement(node) ? node.declarationList.declarations : [node];
+      const declarations = ts.isVariableStatement(node) ? [...node.declarationList.declarations] : [node];
 
       declarations.forEach((declaration) => {
         const name = declaration.name.getText();
 
-        context.debug.debug('exported node:', chalk.yellowBright(name));
+        debug.debug(boxPrefix, chalk.green('exports'), chalk.yellowBright(name));
 
         variables.set(relativePath, new Set([...(variables.get(file) || []), name]));
       });
     } else {
-      context.debug.debug(chalk.gray('skipping non-export statement:', nodeText.replace(/\n/g, ' ').slice(0, 50)));
+      debug.debug(boxPrefix, chalk.gray('skipping non-export statement:', trimText(nodeText)));
     }
   });
 

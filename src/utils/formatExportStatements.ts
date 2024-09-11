@@ -21,8 +21,8 @@ export const formatExportStatements = (
   exportStatements.forEach((set, name) => {
     const firstEntry = [...set][0];
 
-    if (set.size === 1 && firstEntry?.type === ImportExportStatementType.All) {
-      all.push([name, set as Set<AllExportStatement>]);
+    if (firstEntry?.type === ImportExportStatementType.All) {
+      all.push([name, new Set([firstEntry])]);
     } else {
       named.push([name, set as Set<NamedImportOrExportStatement>]);
     }

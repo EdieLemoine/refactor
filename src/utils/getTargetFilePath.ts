@@ -1,8 +1,8 @@
 import type {CommandContext} from '../types.ts';
 import path from 'node:path';
 import {toAbsolute} from './toAbsolute.ts';
-import {getCompilerOptions} from './ts/getCompilerOptions.ts';
 import ts from 'typescript';
+import {getCompilerOptions} from './ts/getCompilerOptions.ts';
 import {memoize} from './memoize.ts';
 
 const memoized = memoize(((context, moduleTextPath, file) => {
@@ -19,6 +19,11 @@ const memoized = memoize(((context, moduleTextPath, file) => {
 
     context.debug.debug('manually resolved path:', manualPath);
     return manualPath;
+  }
+
+  if (!resolvedFilePath.startsWith('/')) {
+    // Resolve the absolute path
+    return toAbsolute({ ...context, inputPath: path.dirname(context.inputPath) }, resolvedFilePath);
   }
 
   return resolvedFilePath;

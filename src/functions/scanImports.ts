@@ -42,23 +42,21 @@ export const scanImports = (
 
   sourceFiles.forEach((filePath) => {
     const nestedContext = extendContext(context, toRelative(context, filePath));
-
     const sourceFile = createSourceFile(context, filePath);
+
     const { debug } = nestedContext;
 
     const imports = sourceFile.statements.filter(ts.isImportDeclaration);
 
     imports.forEach((node) => {
       const importPath = node.moduleSpecifier.getText().replace(/['"]/g, '');
-      const resolved = getTargetFilePath(nestedContext, importPath, filePath);
+      const targetFilePath = getTargetFilePath(nestedContext, importPath, filePath);
 
       // if it is not a local import, skip
-      if (resolved.includes('/node_modules/')) {
+      if (targetFilePath.includes('/node_modules/')) {
         debug.debug(chalk.gray('skipping import from node_modules'), importPath);
         return;
       }
-
-      const targetFilePath = getTargetFilePath(nestedContext, importPath, filePath);
 
       // check if it is a barrel import by comparing the actual targetFilePath to the importText
       const isBarrelImport = isBarrelFile(nestedContext, targetFilePath);
@@ -77,6 +75,7 @@ export const scanImports = (
       const newImports = new Map<string, Set<ImportStatementDefinition>>();
 
       const barrelKey = toRelative(nestedContext, targetFilePath);
+
       const matchingExports = getExportsFromBarrel(nestedContext, variables, barrels.get(barrelKey));
 
       node.importClause?.namedBindings?.forEachChild((childNode) => {
@@ -85,7 +84,7 @@ export const scanImports = (
         const matchingFile = Array.from(matchingExports.entries()).find(([, value]) => value.has(name));
 
         if (!matchingFile) {
-          debug.error(chalk.red('(imports) no matching file found for', name));
+          debug.error(chalk.red('(imports) no matching file found for', name, 'in', barrelKey));
           return;
         }
 
