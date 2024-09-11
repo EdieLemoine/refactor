@@ -1,11 +1,11 @@
-import * as ts from 'typescript';
+import ts from 'typescript';
 import fs from 'node:fs';
-import {memoize} from '../memoize.ts';
 import {parse} from '@vue/compiler-sfc';
 import type {CommandContext, RefactorOptions} from '../../types.ts';
 import {toAbsolute} from '../toAbsolute.ts';
+import {memoize} from '../memoize.ts';
 
-const realCreateSourceFile = (context: CommandContext<RefactorOptions>, file: string): ts.SourceFile => {
+const memoized = memoize(((context, file) => {
   const resolvedPath = toAbsolute(context, file);
 
   let sourceText: string;
@@ -26,6 +26,8 @@ const realCreateSourceFile = (context: CommandContext<RefactorOptions>, file: st
     ts.ScriptTarget.Latest,
     true,
   );
-};
+}) satisfies typeof createSourceFile, (context, file) => `${context.inputPath}:${file}`);
 
-export const createSourceFile = memoize(realCreateSourceFile);
+export const createSourceFile = (context: CommandContext<RefactorOptions>, file: string): ts.SourceFile => {
+  return memoized(context, file);
+};

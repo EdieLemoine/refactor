@@ -50,10 +50,11 @@ export const scanImports = (
 
     imports.forEach((node) => {
       const importPath = node.moduleSpecifier.getText().replace(/['"]/g, '');
+      const resolved = getTargetFilePath(nestedContext, importPath, filePath);
 
-      // if it is not a relative import, skip
-      if (!importPath.startsWith('.')) {
-        debug.debug(chalk.gray('skipping non-relative import'), importPath);
+      // if it is not a local import, skip
+      if (resolved.includes('/node_modules/')) {
+        debug.debug(chalk.gray('skipping import from node_modules'), importPath);
         return;
       }
 
