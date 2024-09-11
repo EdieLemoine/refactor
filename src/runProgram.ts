@@ -14,6 +14,7 @@ export const runProgram = (env: LiftoffEnv, argv: string[]): void => {
     .option('--barrel-filename', 'The glob pattern to match barrel files.', 'index.ts')
     .option('--delete', 'Delete the barrel files after refactoring.', false)
     .option('--source-glob', 'The glob pattern to match source files.', '**/*.{ts,vue}')
+    .option('--all-exports', 'Generate * exports if all entries from a file are exported.', false)
     .option('-d, --dry-run', 'Run the refactor without writing to disk.', false)
     .option('-v, --verbose', 'Log verbosity.', (_: string, prev: number) => prev + 1, 0)
     .option('-q, --quiet', 'Suppress output.', false)

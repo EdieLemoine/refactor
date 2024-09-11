@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type {Debugger} from 'debug';
 import type {LiftoffEnv} from 'liftoff';
-import {FileChange} from './constants.ts';
+import {FileChange, ImportExportStatementType} from './constants.ts';
 
 export interface BaseOptions {
   quiet: boolean;
@@ -9,6 +9,7 @@ export interface BaseOptions {
 }
 
 export interface RefactorOptions extends BaseOptions {
+  allExports: boolean;
   barrelFilename: string;
   dryRun: boolean;
   lineWidth: number;
@@ -43,10 +44,24 @@ export interface BarrelsAndVariables {
   variables: Map<string, Set<string>>
 }
 
-export interface ImportOrExportStatementDefinition {
-  isType: boolean
-  name: string,
+interface BaseImportOrExportStatement {
+  isType: boolean;
 }
+
+export interface NamedImportOrExportStatement extends BaseImportOrExportStatement {
+  name: string,
+  type: ImportExportStatementType.Named,
+}
+
+export interface AllExportStatement extends BaseImportOrExportStatement {
+  type: ImportExportStatementType.All,
+}
+
+export type ImportStatementDefinition = NamedImportOrExportStatement
+
+export type ExportStatementDefinition = AllExportStatement | NamedImportOrExportStatement
+
+export type ImportOrExportStatementDefinition = AllExportStatement | NamedImportOrExportStatement
 
 export interface CustomDebugger extends Debugger {
   debug(formatter: any, ...args: any[]): void;

@@ -1,9 +1,10 @@
 import type {
   CommandContext,
-  ImportOrExportStatementDefinition,
   FileUpdateDefinition,
   FileModificationDefinition,
   RefactorOptions,
+  NamedImportOrExportStatement,
+  ExportStatementDefinition,
 } from '../types.ts';
 import {extendContext} from '../utils/extendContext.ts';
 import {createSourceFile} from '../utils/ts/createSourceFile.ts';
@@ -13,12 +14,12 @@ import {extendDebugger} from '../utils/extendDebugger.ts';
 import {toRelative} from '../utils/toRelative.ts';
 import chalk from 'chalk';
 import {parseImportOrExportClause} from '../utils/parseImportOrExportClause.ts';
-import {formatImportOrExportStatements} from '../utils/formatImportOrExportStatements.ts';
 import {addToMapSet} from '../utils/addToMapSet.ts';
 import {formatImportOrExportPath} from '../utils/formatImportOrExportPath.ts';
 import {getExportsFromBarrel} from '../utils/getExportsFromBarrel.ts';
-import {FileChange} from '../constants.ts';
+import {FileChange, ImportExportStatementType} from '../constants.ts';
 import {createBoxPrefix} from '../utils/createBoxPrefix.ts';
+import {formatExportStatements} from '../utils/formatExportStatements.ts';
 
 export const scanExports = (inputContext: CommandContext<RefactorOptions>, barrels: Map<string, Set<string>>, variables: Map<string, Set<string>>): FileModificationDefinition[] => {
   const context = extendContext(inputContext, 'scanExports');
@@ -54,7 +55,7 @@ export const scanExports = (inputContext: CommandContext<RefactorOptions>, barre
 
     nestedDebug.debug('exporting from', chalk.yellowBright(newExportPath));
 
-    const newExports = new Map<string, Set<ImportOrExportStatementDefinition>>();
+    const newExports = new Map<string, Set<ExportStatementDefinition>>();
 
     const barrel = barrels.get(exportPath);
     const matchingExports = getExportsFromBarrel(context, variables, barrel);
@@ -80,7 +81,9 @@ export const scanExports = (inputContext: CommandContext<RefactorOptions>, barre
 
         const newExportPath = formatImportOrExportPath(toRelative(context, matchingFile[0]));
 
-        addToMapSet(newExportPath, { name, isType }, newExports);
+        console.log({ newExportPath, name, isType });
+
+        addToMapSet(newExportPath, { type: ImportExportStatementType.Named, name, isType }, newExports);
         nestedDebug.debug(chalk.green('found file for', name, '->', newExportPath));
       });
     } else {
@@ -91,14 +94,32 @@ export const scanExports = (inputContext: CommandContext<RefactorOptions>, barre
 
         nestedDebug.debug(chalk.green('exporting from'), chalk.cyan(filePath));
 
+        const foundExports: NamedImportOrExportStatement[] = [];
+
         exportedVariables.forEach((variable) => {
           const boxPrefix = createBoxPrefix(i, exportedVariables.size);
 
-          addToMapSet(newExportPath, { name: variable, isType: false }, newExports);
+          console.log({ newExportPath, variable });
+
+          foundExports.push({ type: ImportExportStatementType.Named, isType: false, name: variable });
           nestedDebug.debug(boxPrefix, chalk.blue('export'), chalk.yellow(variable));
 
           i++;
         });
+
+        // if everything was exported, export '*' instead
+        if (context.options.allExports && foundExports.length === exportedVariables.size) {
+          const isType = foundExports.every((value) => value.isType);
+
+          addToMapSet(newExportPath, {
+            type: ImportExportStatementType.All,
+            isType,
+          }, newExports);
+
+          nestedDebug.debug(chalk.green(`exporting all ${isType ? 'as type ' : ''}from`), chalk.cyan(filePath));
+        } else {
+          foundExports.forEach((value) => addToMapSet(newExportPath, value, newExports));
+        }
       });
     }
 
@@ -106,7 +127,7 @@ export const scanExports = (inputContext: CommandContext<RefactorOptions>, barre
       type: FileChange.Update,
       path: rootBarrelPath,
       oldContent: node.getText(),
-      newContent: formatImportOrExportStatements(context, 'export', newExports).join('\n'),
+      newContent: formatExportStatements(context, newExports).join('\n'),
     } satisfies FileUpdateDefinition;
   }).filter(Boolean) as FileUpdateDefinition[];
 };

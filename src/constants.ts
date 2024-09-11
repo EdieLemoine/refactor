@@ -11,3 +11,8 @@ export enum FileChange {
   Update = 'update',
   Delete = 'delete',
 }
+
+export enum ImportExportStatementType {
+  Named = 'named',
+  All = 'all',
+}

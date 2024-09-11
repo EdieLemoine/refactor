@@ -1,14 +1,14 @@
 import type {
   CommandContext,
-  ImportOrExportStatementDefinition,
   VariableMap,
   BarrelMap,
   FileModificationDefinition,
   RefactorOptions,
+  ImportStatementDefinition,
 } from '../types.ts';
 import {toRelative} from '../utils/toRelative.ts';
 import {createSourceFile} from '../utils/ts/createSourceFile.ts';
-import * as ts from 'typescript';
+import ts from 'typescript';
 import {getTargetFilePath} from '../utils/getTargetFilePath.ts';
 import {isBarrelFile} from '../utils/isBarrelFile.ts';
 import chalk from 'chalk';
@@ -17,7 +17,7 @@ import {addToMapSet} from '../utils/addToMapSet.ts';
 import {glob} from 'fast-glob';
 import {BASE_IGNORES, FileChange} from '../constants.ts';
 import {parseImportOrExportClause} from '../utils/parseImportOrExportClause.ts';
-import {formatImportOrExportStatements} from '../utils/formatImportOrExportStatements.ts';
+import {formatImportStatements} from '../utils/formatImportStatements.ts';
 import {formatImportOrExportPath} from '../utils/formatImportOrExportPath.ts';
 import {getExportsFromBarrel} from '../utils/getExportsFromBarrel.ts';
 import path from 'node:path';
@@ -73,7 +73,7 @@ export const scanImports = (
         return;
       }
 
-      const newImports = new Map<string, Set<ImportOrExportStatementDefinition>>();
+      const newImports = new Map<string, Set<ImportStatementDefinition>>();
 
       const barrelKey = toRelative(nestedContext, targetFilePath);
       const matchingExports = getExportsFromBarrel(nestedContext, variables, barrels.get(barrelKey));
@@ -93,10 +93,10 @@ export const scanImports = (
 
         debug.debug(chalk.green('replace:'), chalk.gray(importPath), '->', chalk.green(newImportPath));
 
-        addToMapSet(newImportPath, { name, isType }, newImports);
+        addToMapSet(newImportPath, { type: 'named', name, isType }, newImports);
       });
 
-      const newStatements = formatImportOrExportStatements(context, 'import', newImports);
+      const newStatements = formatImportStatements(context, newImports);
 
       if (newStatements.length === 0) {
         debug.warn(chalk.red('EMPTY REPLACEMENT!'));

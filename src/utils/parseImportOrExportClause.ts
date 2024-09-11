@@ -1,7 +1,8 @@
 import * as ts from 'typescript';
-import type {ImportOrExportStatementDefinition} from '../types.ts';
+import type {NamedImportOrExportStatement} from '../types.ts';
+import {ImportExportStatementType} from '../constants.ts';
 
-export const parseImportOrExportClause = (node: ts.Node): ImportOrExportStatementDefinition => {
+export const parseImportOrExportClause = (node: ts.Node): NamedImportOrExportStatement => {
   const parentTypeMatch = node.parent?.parent?.getText().match(/^(?:import|export)\s+type/);
 
   const nodeText = node.getText();
@@ -14,5 +15,5 @@ export const parseImportOrExportClause = (node: ts.Node): ImportOrExportStatemen
     throw new Error('could not extract name from ' + nodeText);
   }
 
-  return { isType, name };
+  return { type: ImportExportStatementType.Named, isType, name };
 };

@@ -1,15 +1,11 @@
-import type {CommandContext, ImportOrExportStatementDefinition, RefactorOptions} from '../types.ts';
+import type {NamedImportOrExportStatement, CommandContext, RefactorOptions} from '../types.ts';
 import {getQuoteCharacter} from './getQuoteCharacter.ts';
 
-export const formatImportOrExportStatements = (
-  context: CommandContext<RefactorOptions>,
-  keyword: 'export' | 'import',
-  importsOrExports: Map<string, Set<ImportOrExportStatementDefinition>>,
-): string[] => {
+export const formatNamedImportsOrExports = (context: CommandContext<RefactorOptions>, keyword: 'import' | 'export', statements: [string, Set<NamedImportOrExportStatement>][]): string[] => {
   const quoteCharacter = getQuoteCharacter(context);
 
   // sort by whether it's a single import/export or multiple, and then by filename
-  const sorted = [...importsOrExports]
+  const sorted = statements
     .toSorted(([filePathA, valuesA], [filePathB, valuesB]) => {
       if (valuesA.size === 1 && valuesB.size > 1) {
         return -1;
@@ -25,7 +21,7 @@ export const formatImportOrExportStatements = (
   return sorted.map(([filePath, importedValues]) => {
     const valuesArray = [...importedValues];
 
-    const isTypeOnly = keyword === 'export' && valuesArray.every(({ isType }) => isType);
+    const isTypeOnly = valuesArray.every(({ isType }) => isType);
     const typeKeyword = isTypeOnly ? ' type' : '';
 
     const imports = valuesArray
@@ -38,16 +34,15 @@ export const formatImportOrExportStatements = (
         return isType ? `type ${name}` : name;
       });
 
-    const newString = `${keyword}${typeKeyword} {${imports.join(', ')}} from ${quoteCharacter}${filePath}${quoteCharacter};`;
+    const prefix = `${keyword}${typeKeyword} {`;
+    const suffix = `} from ${quoteCharacter}${filePath}${quoteCharacter};`;
+
+    const newString = `${prefix}${imports.join(', ')}${suffix}`;
 
     if (newString.length <= context.options.lineWidth) {
       return newString;
     }
 
-    return [
-      `${keyword}${typeKeyword} {`,
-      ...imports.map((name) => `  ${name},`),
-      `} from ${quoteCharacter}${filePath}${quoteCharacter};`,
-    ].join('\n');
+    return [prefix, ...imports.map((name) => `  ${name},`), suffix].join('\n');
   });
 };

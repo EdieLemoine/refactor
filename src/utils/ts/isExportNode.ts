@@ -13,5 +13,5 @@ export const isExportNode = (node: ts.Statement): node is NodeWithNameAndModifie
 
   return ts.isVariableStatement(node) ||
     ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node) ||
-    ts.isEnumDeclaration(node) || ts.isModuleDeclaration(node);
+    ts.isEnumDeclaration(node) || ts.isModuleDeclaration(node) || ts.isClassDeclaration(node);
 };
