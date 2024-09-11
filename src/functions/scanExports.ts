@@ -81,8 +81,6 @@ export const scanExports = (inputContext: CommandContext<RefactorOptions>, barre
 
         const newExportPath = formatImportOrExportPath(toRelative(context, matchingFile[0]));
 
-        console.log({ newExportPath, name, isType });
-
         addToMapSet(newExportPath, { type: ImportExportStatementType.Named, name, isType }, newExports);
         nestedDebug.debug(chalk.green('found file for', name, '->', newExportPath));
       });
@@ -98,8 +96,6 @@ export const scanExports = (inputContext: CommandContext<RefactorOptions>, barre
 
         exportedVariables.forEach((variable) => {
           const boxPrefix = createBoxPrefix(i, exportedVariables.size);
-
-          console.log({ newExportPath, variable });
 
           foundExports.push({ type: ImportExportStatementType.Named, isType: false, name: variable });
           nestedDebug.debug(boxPrefix, chalk.blue('export'), chalk.yellow(variable));
