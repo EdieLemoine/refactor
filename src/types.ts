@@ -5,6 +5,7 @@ import {FileChange, ImportExportStatementType} from './constants.ts';
 
 export interface BaseOptions {
   quiet: boolean;
+
   verbose: number;
 }
 
@@ -16,6 +17,7 @@ export interface RefactorOptions extends BaseOptions {
   rootBarrel?: string;
   singleQuotes: boolean;
   sourceGlob: string;
+  tsconfigFilename: string;
 }
 
 interface BaseFileModificationDefinition<Type extends FileChange> {

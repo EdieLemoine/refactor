@@ -11,7 +11,8 @@ export const runProgram = (env: LiftoffEnv, argv: string[]): void => {
   program
     .command('refactor')
     .argument('[path]', 'The path to the directory to refactor.', (input) => path.resolve(input), process.cwd())
-    .option('--barrel-filename', 'The glob pattern to match barrel files.', 'index.ts')
+    .option('--barrel-filename <filename>', 'The name of the barrel file.', 'index.ts')
+    .option('--tsconfig-filename <filename>', 'The name of the root tsconfig file.', 'tsconfig.json')
     .option('--delete', 'Delete the barrel files after refactoring.', false)
     .option('--source-glob', 'The glob pattern to match source files.', '**/*.{ts,vue}')
     .option('--all-exports', 'Generate * exports if all entries from a file are exported.', false)

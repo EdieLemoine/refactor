@@ -1,4 +1,4 @@
-import type {CommandContext} from '../types.ts';
+import type {CommandContext, RefactorOptions} from '../types.ts';
 import path from 'node:path';
 import {toAbsolute} from './toAbsolute.ts';
 import ts from 'typescript';
@@ -29,6 +29,6 @@ const memoized = memoize(((context, moduleTextPath, file) => {
   return resolvedFilePath;
 }) satisfies typeof getTargetFilePath, (_, moduleTextPath, file) => `${moduleTextPath}:${file}`);
 
-export const getTargetFilePath = (context: CommandContext, moduleTextPath: string, file: string): string => {
+export const getTargetFilePath = (context: CommandContext<RefactorOptions>, moduleTextPath: string, file: string): string => {
   return memoized(context, moduleTextPath, file);
 };
